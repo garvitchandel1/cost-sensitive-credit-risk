@@ -1,75 +1,53 @@
-1. Problem Formulation
+Cost-Sensitive and Profit-Optimized Credit Risk Modeling
+1. Overview
+
+This project develops a credit risk decision system that explicitly separates:
+
+Probability estimation (default prediction)
+
+Decision policy (approval threshold selection)
+
+Economic optimization (portfolio profit maximization)
+
+Instead of optimizing traditional ML metrics such as accuracy or ROC-AUC alone, the objective is to derive an economically optimal approval policy based on expected portfolio profit under both normal and stressed economic conditions.
+
+2. Problem Formulation
 
 Let:
 
-X∈Rd
-X∈R
-d
- denote borrower feature vectors
+X = borrower feature vector
 
-Y∈{0,1}
-Y∈{0,1} denote default outcome
+Y ∈ {0,1} = loan outcome
 
-Y=1
-Y=1 → Default
+1 → Default
 
-Y=0
-Y=0 → Non-default
+0 → Non-default
 
-We estimate the conditional probability of default:
+We estimate:
 
-p^(x)=P(Y=1∣X=x)
-p
-^
-	​
+p(x) = P(Y = 1 | X = x)
 
-(x)=P(Y=1∣X=x)
+using an XGBoost classifier.
 
-using a gradient-boosted decision tree model (XGBoost).
+A decision policy is defined via threshold t:
 
-A decision policy is defined via thresholding:
+Reject loan if p(x) ≥ t
 
-y^(x;t)={1	if p^(x)≥t(Reject)
-0	if p^(x)<t(Approve)
-y
-^
-	​
+Approve loan if p(x) < t
 
-(x;t)={
-1
-0
-	​
+The central problem is:
 
-if 
-p
-^
-	​
+What threshold maximizes portfolio-level economic value?
 
-(x)≥t(Reject)
-if 
-p
-^
-	​
+3. Dataset
 
-(x)<t(Approve)
-	​
-
-
-The core question is not prediction accuracy, but:
-
-What threshold 
-t
-t maximizes economic value?
-
-2. Dataset
-
-This project uses the publicly available LendingClub dataset (2007–2018).
+Source: LendingClub accepted loans dataset (2007–2018)
 
 Dataset Characteristics
 
 200,000 sampled loans
 
-Default rate ≈ 20%
+~20% default rate
 
 Binary target:
 
@@ -79,7 +57,7 @@ Charged Off → 1
 
 150+ original features including:
 
-Credit history metrics (FICO range, delinquencies, credit utilization)
+Credit history metrics (FICO range, delinquencies, utilization)
 
 Loan attributes (term, interest rate, installment)
 
@@ -91,7 +69,7 @@ Removal of post-outcome (leakage) variables identified via SHAP
 
 High-missing feature pruning
 
-Structured missing-value treatment (indicator + imputation)
+Structured missing-value handling (indicator + imputation)
 
 Date feature engineering (credit age)
 
@@ -99,51 +77,7 @@ Ordinal and one-hot encoding
 
 Stratified train-test split
 
-Raw data is not included in the repository due to size constraints.
-
-3. Economic Objective
-
-Traditional ML optimizes metrics such as ROC-AUC:
-
-max⁡ROC-AUC
-maxROC-AUC
-
-However, credit decision-making requires optimizing portfolio-level profit.
-
-Let:
-
-π
-π = profit per performing loan
-
-L
-L = Loss Given Default (LGD)
-
-TN(t)
-TN(t) = number of performing loans approved
-
-FN(t)
-FN(t) = number of defaulted loans approved
-
-Total portfolio profit under threshold 
-t
-t:
-
-Π(t)=TN(t)π−FN(t)L
-Π(t)=TN(t)π−FN(t)L
-
-The optimal decision rule is:
-
-t∗=arg⁡max⁡tΠ(t)
-t
-∗
-=arg
-t
-max
-	​
-
-Π(t)
-
-This reframes classification as an economic optimization problem.
+Raw dataset is not included in the repository due to size constraints.
 
 4. Model Performance
 
@@ -156,22 +90,39 @@ Test PR-AUC ≈ 0.42
 Probability calibration was evaluated via isotonic regression.
 Brier score improvement was marginal, indicating reasonably calibrated base probabilities.
 
-5. Normal Economic Scenario
+5. Economic Framework
+
+Let:
+
+π = profit per performing loan
+
+L = Loss Given Default (LGD)
+
+TN(t) = number of performing loans approved
+
+FN(t) = number of defaulted loans approved
+
+Total portfolio profit under threshold t:
+
+Profit(t) = TN(t) × π − FN(t) × L
+
+The optimal policy is:
+
+t* = argmax_t Profit(t)
+
+This reframes classification as a profit optimization problem rather than a prediction accuracy problem.
+
+6. Normal Economic Scenario
 
 Assumptions:
 
-π=1200
-π=1200
+π = 1200
 
-L=7000
-L=7000
+L = 7000
 
 Profit-optimized threshold:
 
-t∗≈0.16
-t
-∗
-≈0.16
+t* ≈ 0.16
 
 Portfolio outcomes:
 
@@ -179,22 +130,15 @@ Metric	Value
 Approval Rate	47%
 Total Profit	$4.92M
 Profit per Approved Loan	~$440
-6. Stress Scenario
+7. Stress Scenario (Recession Simulation)
 
-To simulate recessionary conditions:
+To simulate adverse macroeconomic conditions:
 
-L=9000
-L=9000
+L = 9000
 
-Re-optimizing:
+Re-optimizing threshold:
 
-tstress∗≈0.11
-t
-stress
-∗
-	​
-
-≈0.11
+t*_stress ≈ 0.11
 
 Portfolio outcomes:
 
@@ -202,46 +146,49 @@ Metric	Value
 Approval Rate	30%
 Total Profit	$3.47M
 Profit per Approved Loan	~$488
-7. Theoretical Implication
 
-Under a simplified expected-value framework, approving a loan is rational when:
+Observation:
 
-(1−p)π−pL>0
-(1−p)π−pL>0
+Higher LGD → lower optimal threshold
 
-Solving:
+Approval rate contracts under stress
 
-p<ππ+L
-p<
-π+L
-π
-	​
+Portfolio becomes more conservative
 
+Profit per approved loan increases
 
-Thus, the economically rational threshold depends on:
+8. Theoretical Insight
 
-ππ+L
-π+L
-π
-	​
+A loan should be approved when expected profit is positive:
 
+(1 − p) × π − p × L > 0
 
-Higher LGD → lower optimal threshold → stricter policy.
+Solving for p:
 
-8. Key Insights
+p < π / (π + L)
 
-Classification-optimal thresholds do not align with profit-optimal thresholds.
+Thus, the economically rational decision boundary depends directly on the ratio:
 
-The decision boundary is a function of economic parameters, not just model accuracy.
+π / (π + L)
 
-Portfolio policy must adapt to macroeconomic shifts.
+Higher default severity (L) shifts the threshold downward, enforcing stricter credit policy.
 
-Probability estimation and decision policy should be explicitly separated.
+9. Key Contributions
 
-Economic assumptions dominate marginal ROC improvements.
+Explicit separation of prediction and decision layers
 
-9. Conclusion
+Cost-sensitive and profit-based threshold optimization
 
-This project formalizes credit risk modeling as a constrained economic optimization problem. By integrating probabilistic modeling with explicit portfolio-level profit maximization, it derives economically consistent and stress-adaptive approval policies.
+SHAP-based leakage detection and feature validation
+
+Probability calibration assessment
+
+Macroeconomic stress testing via LGD adjustment
+
+Sensitivity analysis of decision policy
+
+10. Conclusion
+
+This project formalizes credit risk modeling as an economic decision optimization problem. By integrating probabilistic machine learning with explicit portfolio-level profit maximization, it derives economically consistent, stress-adaptive approval policies.
 
 The result is a decision-aware credit scoring framework rather than a pure classification model.
