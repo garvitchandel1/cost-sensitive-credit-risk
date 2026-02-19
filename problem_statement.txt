@@ -1,0 +1,45 @@
+Financial institutions incur substantial losses due to loan defaults. Traditional classification models optimize metrics such as accuracy or ROC-AUC, which do not directly reflect economic impact.
+
+In credit risk decision-making:
+
+Approving a borrower who later defaults generates a loss proportional to Loss Given Default (LGD).
+
+Rejecting a creditworthy borrower results in forgone interest income.
+
+This project reframes credit risk modeling as an economic decision optimization problem.
+
+Business Objective
+
+Develop a binary classification system that:
+
+Estimates probability of default (PD).
+
+Converts PD into approve/reject decisions via thresholding.
+
+Optimizes the threshold to maximize expected portfolio profit.
+
+Evaluates policy robustness under stressed economic conditions.
+
+Economic Framework
+
+Let:
+
+π = profit per performing loan
+
+L = loss given default
+
+TN(t) = performing loans approved
+
+FN(t) = defaulted loans approved
+
+Total profit under threshold t:
+
+Profit(t) = TN(t) × π − FN(t) × L
+
+The objective is:
+
+t* = argmaxₜ Profit(t)
+
+Stress Testing
+
+To simulate recessionary conditions, LGD is increased and the optimal threshold is re-derived, allowing the approval policy to adapt to changing economic risk.
