@@ -192,3 +192,7 @@ Sensitivity analysis of decision policy
 This project formalizes credit risk modeling as an economic decision optimization problem. By integrating probabilistic machine learning with explicit portfolio-level profit maximization, it derives economically consistent, stress-adaptive approval policies.
 
 The result is a decision-aware credit scoring framework rather than a pure classification model.
+
+## 👤 Author
+
+**Garvit Chandel**  
